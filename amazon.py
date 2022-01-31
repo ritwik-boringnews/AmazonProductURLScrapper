@@ -19,10 +19,9 @@ def colToExcel(col):
     return excelCol
 
 
-
-# shutil.copy( "AmazonOutputFileOriginal.xlsx","AmazonOutputFile.xlsx")
-INPUT_FILE="amazon_input_file.xlsx"
-OUTPUT_FILE="AmazonOutputFile.xlsx"
+shutil.copy( "AmazonOutputFileOriginal.xlsx","OUTPUT-Amazon.xlsx")
+INPUT_FILE="INPUT-Amazon.xlsx"
+OUTPUT_FILE="OUTPUT-Amazon.xlsx"
 
 workbook = load_workbook(filename=INPUT_FILE)
 workbookout = load_workbook(filename=OUTPUT_FILE)
@@ -34,7 +33,7 @@ row=1
 initial_row=5
 driver = webdriver.Chrome()
 driver.maximize_window()
-j=1
+
 
 while(sheet["A"+str(row)].value):
     
@@ -165,7 +164,19 @@ while(sheet["A"+str(row)].value):
             COLORS=",".join(colors)
         except:
             COLORS=",".join(colors)
+        if (len(COLORS)>0 and COLORS[0] == ','):
+            COLORS = COLORS[1:]
+
         # see more
+        size=[]
+        try:    
+            size_div=WebDriverWait(driver,6).until(EC.presence_of_element_located((By.ID,'tp-inline-twister-dim-values-container')))
+            size_list=WebDriverWait(size_div,6).until(EC.presence_of_all_elements_located((By.TAG_NAME,'img')))
+            for i in size_list:
+                size.append(i.get_attribute('alt'))
+            SIZE=",".join(size)
+        except:
+            SIZE=",".join(size)
         
         try:
             details=WebDriverWait(driver,6).until(EC.presence_of_element_located((By.ID,'poExpander')))
@@ -176,9 +187,9 @@ while(sheet["A"+str(row)].value):
         except:
             novalue=1
 
-        if(MRP[0]=='₹'):
+        if(len(MRP)>0 and MRP[0]=='₹'):
             MRP=MRP[1:]
-        if(RRP[0]=='₹'):
+        if(len(RRP)>0 and RRP[0]=='₹'):
             RRP=RRP[1:]
         
     
@@ -212,19 +223,19 @@ while(sheet["A"+str(row)].value):
 
         filter_details=[]
         for i in range(0,len(DETAILS),2):
-            if ("Item model number" in DETAILS[i]):
+            if ("model" in DETAILS[i] or "Model" in DETAILS[i]):
                 MODEL_NUMBER=DETAILS[i+1]
-            elif ("Brand" in DETAILS[i]):
+            elif ("Brand" in DETAILS[i] or "brand" in DETAILS[i]):
                 BRAND=DETAILS[i+1]
             elif ("ASIN" in DETAILS[i]):
                 ASIN=DETAILS[i+1]
-            elif ("Item part number" in DETAILS[i]):
+            elif ("part number" in DETAILS[i] or "Part Number" in DETAILS[i] or "Part number" in DETAILS[i] or "part Number" in DETAILS[i]):
                 PART_NUMBER=DETAILS[i+1]
-
+            elif ("Reviews" in DETAILS[i] or "reviews" in DETAILS[i] or "Rank" in DETAILS[i] or "rank" in DETAILS[i] or "#" in DETAILS[i]):
+                pass
             else:
                 filter_details.append(DETAILS[i])
-                filter_details.append(DETAILS[i+1])
-            
+                filter_details.append(DETAILS[i+1])    
         DETAILS=filter_details
         
 
@@ -250,8 +261,9 @@ while(sheet["A"+str(row)].value):
                 sheetout[colToExcel(38+i)+str(row+initial_row)] = IMAGES[i]
        
         MRP = MRP.replace(",", "")
+        RRP = RRP.replace(",", "")
 
-        sheetout["A"+str(row+initial_row)] = j
+        sheetout["A"+str(row+initial_row)] = row
         sheetout["B"+str(row+initial_row)] = PART_NUMBER
         sheetout["C"+str(row+initial_row)] = TITLE.strip()
         sheetout["D"+str(row+initial_row)] = DESC
@@ -264,8 +276,9 @@ while(sheet["A"+str(row)].value):
         sheetout["E"+str(row+initial_row)] = PROD_TAG
         sheetout["J"+str(row+initial_row)] = META_TIL
         sheetout["K"+str(row+initial_row)] = META_DES
-        sheetout["AC"+str(row+initial_row)] = COLORS
-        j=j+1
+        sheetout["BA"+str(row+initial_row)] = COLORS
+        sheetout["BB"+str(row+initial_row)] = SIZE
+      
 
         print("done : " +url)
 
@@ -278,5 +291,3 @@ while(sheet["A"+str(row)].value):
 driver.quit()
 
 subprocess.call(('open', OUTPUT_FILE))
-
-
